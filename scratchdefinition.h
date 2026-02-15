@@ -1,20 +1,44 @@
-#ifndef SCRATCH_TYPES_H
-#define SCRATCH_TYPES_H
+#ifndef SCRATCH_DEFINITION_H
+#define SCRATCH_DEFINITION_H
 
 #include <vector>
-#include <string>
+#include <SDL2/SDL.h>
+
+using namespace std;
+
 enum BlockType {
     MOVE_STEPS,
     TURN_RIGHT,
     TURN_LEFT,
     GO_TO_XY,
-    IF_ON_EDGE_BOUNCE 
+    IF_ON_EDGE_BOUNCE,
+    PEN_DOWN,
+    PEN_UP,
+    SET_PEN_COLOR,
+    CLEAR_ALL,
+    REPEAT_START,
+    REPEAT_END,
+    FOREVER_START,
+    FOREVER_END
 };
 
 struct Block {
     BlockType type;
     double val1;
     double val2;
+    double val3;
+};
+
+struct Line {
+    double x1, y1, x2, y2;
+    Uint8 r, g, b;
+    int thickness;
+};
+
+struct LoopState {
+    int startIndex;    
+    int remaining;     
+    bool isForever;    
 };
 
 struct Sprite {
@@ -23,8 +47,16 @@ struct Sprite {
     bool isVisible;
     double size;
 
-    std::vector<Block> script;
+    bool isPenDown;
+    Uint8 penR, penG, penB;
+    int penThickness;
+    vector<Line> penTrail;
+
+    vector<Block> script;
     int currentBlockIndex;
     bool isRunning;
+    
+    vector<LoopState> loopStack;
 };
+
 #endif

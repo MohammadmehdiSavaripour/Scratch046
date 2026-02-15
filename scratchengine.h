@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iostream>
 
+using namespace std;
+
 const int STAGE_WIDTH = 800;
 const int STAGE_HEIGHT = 600;
 const double PI = 3.14159265358979323846;
@@ -20,57 +22,63 @@ void executeNextBlock(Sprite &sprite) {
     }
 
     Block &current = sprite.script[sprite.currentBlockIndex];
+    bool autoAdvance = true; 
 
     switch (current.type) {
         case MOVE_STEPS: {
+            double oldX = sprite.x; double oldY = sprite.y;
             double rad = toRadians(sprite.direction);
             sprite.x += current.val1 * cos(rad);
             sprite.y += current.val1 * sin(rad);
-            break;
-        }
-
-        case TURN_RIGHT:
-            sprite.direction += current.val1;
-            break;
-
-        case TURN_LEFT:
-            sprite.direction -= current.val1;
-            break;
-
-        case GO_TO_XY:
-            sprite.x = current.val1;
-            sprite.y = current.val2;
-            break;
-
-        case IF_ON_EDGE_BOUNCE: {
-            bool bounced = false;
             
-            if (sprite.x > STAGE_WIDTH) {
-                sprite.x = STAGE_WIDTH;
-                sprite.direction = 180 - sprite.direction;
-                bounced = true;
-            }
-            else if (sprite.x < 0) {
-                sprite.x = 0;
-                sprite.direction = 180 - sprite.direction;
-                bounced = true;
-            }
-            
-            if (sprite.y > STAGE_HEIGHT) {
-                sprite.y = STAGE_HEIGHT;
-                sprite.direction = 360 - sprite.direction;
-                bounced = true;
-            }
-            else if (sprite.y < 0) {
-                sprite.y = 0;
-                sprite.direction = 360 - sprite.direction;
-                bounced = true;
+            if (sprite.isPenDown) {
+                sprite.penTrail.push_back({oldX, oldY, sprite.x, sprite.y, sprite.penR, sprite.penG, sprite.penB, sprite.penThickness});
             }
             break;
         }
+        case TURN_RIGHT: sprite.direction += current.val1; break;
+        case TURN_LEFT:  sprite.direction -= current.val1; break;
+        case GO_TO_XY:   sprite.x = current.val1; sprite.y = current.val2; break;
+        case PEN_DOWN:   sprite.isPenDown = true; break;
+        case PEN_UP:     sprite.isPenDown = false; break;
+        case SET_PEN_COLOR: 
+            sprite.penR = (Uint8)current.val1; 
+            sprite.penG = (Uint8)current.val2; 
+            sprite.penB = (Uint8)current.val3; 
+            break;
+
+        case REPEAT_START: {
+            LoopState newLoop;
+            newLoop.startIndex = sprite.currentBlockIndex;
+            newLoop.remaining = (int)current.val1;
+            newLoop.isForever = false;
+            sprite.loopStack.push_back(newLoop);
+            break; 
+        }
+
+        case REPEAT_END: {
+            if (!sprite.loopStack.empty()) {
+                LoopState &top = sprite.loopStack.back();
+                
+                if (!top.isForever) {
+                    top.remaining--;
+                }
+
+                if (top.isForever || top.remaining > 0) {
+                    sprite.currentBlockIndex = top.startIndex + 1;
+                    autoAdvance = false; 
+                } else {
+                    sprite.loopStack.pop_back();
+                }
+            }
+            break;
+        }
+        
     }
 
-    sprite.currentBlockIndex++;
+    if (autoAdvance) {
+        sprite.currentBlockIndex++;
+    }
 }
 
 #endif
