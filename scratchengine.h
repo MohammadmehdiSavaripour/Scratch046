@@ -4,6 +4,7 @@
 #include "scratchdefinition.h"
 #include <cmath>
 #include <iostream>
+#include <SDL2/SDL.h>
 
 using namespace std;
 
@@ -13,6 +14,46 @@ const double PI = 3.14159265358979323846;
 
 double toRadians(double degrees) {
     return degrees * (PI / 180.0);
+}
+
+bool checkCondition(Sprite &sprite, ConditionType type, double value) {
+    switch (type) {
+        case KEY_SPACE_PRESSED: {
+            const Uint8 *state = SDL_GetKeyboardState(NULL);
+            return state[SDL_SCANCODE_SPACE];
+        }
+        case MOUSE_CLICKED: {
+            int x, y;
+            Uint32 buttons = SDL_GetMouseState(&x, &y);
+            return (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
+        }
+        case TOUCHING_EDGE: {
+            return (sprite.x <= 0 || sprite.x >= STAGE_WIDTH || 
+                    sprite.y <= 0 || sprite.y >= STAGE_HEIGHT);
+        }
+        case X_GREATER_THAN:
+            return sprite.x > value;
+        case X_LESS_THAN:
+            return sprite.x < value;
+    }
+    return false;
+}
+
+int findMatchingEnd(Sprite &sprite, int startIndex) {
+    int depth = 0;
+    for (int i = startIndex + 1; i < sprite.script.size(); i++) {
+        BlockType t = sprite.script[i].type;
+        
+        if (t == IF_START || t == IF_ELSE_START) {
+            depth++;
+        } else if (t == IF_END) {
+            if (depth == 0) return i;
+            depth--;
+        } else if (t == ELSE_START && depth == 0) {
+            return i;
+        }
+    }
+    return sprite.script.size();
 }
 
 void executeNextBlock(Sprite &sprite) {
@@ -47,6 +88,24 @@ void executeNextBlock(Sprite &sprite) {
             sprite.penB = (Uint8)current.val3; 
             break;
 
+        case IF_ON_EDGE_BOUNCE: {
+            if (sprite.x > STAGE_WIDTH) {
+                sprite.x = STAGE_WIDTH;
+                sprite.direction = 180 - sprite.direction;
+            } else if (sprite.x < 0) {
+                sprite.x = 0;
+                sprite.direction = 180 - sprite.direction;
+            }
+            if (sprite.y > STAGE_HEIGHT) {
+                sprite.y = STAGE_HEIGHT;
+                sprite.direction = 360 - sprite.direction;
+            } else if (sprite.y < 0) {
+                sprite.y = 0;
+                sprite.direction = 360 - sprite.direction;
+            }
+            break;
+        }
+
         case REPEAT_START: {
             LoopState newLoop;
             newLoop.startIndex = sprite.currentBlockIndex;
@@ -59,7 +118,6 @@ void executeNextBlock(Sprite &sprite) {
         case REPEAT_END: {
             if (!sprite.loopStack.empty()) {
                 LoopState &top = sprite.loopStack.back();
-                
                 if (!top.isForever) {
                     top.remaining--;
                 }
@@ -73,7 +131,62 @@ void executeNextBlock(Sprite &sprite) {
             }
             break;
         }
-        
+
+        case FOREVER_START: {
+            LoopState newLoop;
+            newLoop.startIndex = sprite.currentBlockIndex;
+            newLoop.remaining = -1;
+            newLoop.isForever = true;
+            sprite.loopStack.push_back(newLoop);
+            break;
+        }
+
+        case FOREVER_END: {
+             if (!sprite.loopStack.empty()) {
+                LoopState &top = sprite.loopStack.back();
+                sprite.currentBlockIndex = top.startIndex + 1;
+                autoAdvance = false;
+             }
+             break;
+        }
+
+        case IF_START: {
+            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
+            if (!isTrue) {
+                int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
+                sprite.currentBlockIndex = jumpIndex; 
+                autoAdvance = false; 
+            }
+            break;
+        }
+
+        case IF_ELSE_START: {
+            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
+            if (!isTrue) {
+                int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
+                sprite.currentBlockIndex = jumpIndex;
+                autoAdvance = false;
+            }
+            break;
+        }
+
+        case ELSE_START: {
+            int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
+            sprite.currentBlockIndex = jumpIndex;
+            autoAdvance = false;
+            break;
+        }
+
+        case IF_END:
+            break;
+            
+        case WAIT_UNTIL: {
+            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
+            if (!isTrue) {
+                autoAdvance = false;
+            }
+            break;
+        }
     }
 
     if (autoAdvance) {

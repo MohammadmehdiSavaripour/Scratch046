@@ -19,7 +19,20 @@ enum BlockType {
     REPEAT_START,
     REPEAT_END,
     FOREVER_START,
-    FOREVER_END
+    FOREVER_END,
+    IF_START,
+    IF_ELSE_START,
+    ELSE_START,
+    IF_END,
+    WAIT_UNTIL
+};
+
+enum ConditionType {
+    KEY_SPACE_PRESSED,
+    MOUSE_CLICKED,
+    TOUCHING_EDGE,
+    X_GREATER_THAN,
+    X_LESS_THAN
 };
 
 struct Block {
@@ -27,6 +40,8 @@ struct Block {
     double val1;
     double val2;
     double val3;
+    ConditionType condType;
+    double condValue;
 };
 
 struct Line {
