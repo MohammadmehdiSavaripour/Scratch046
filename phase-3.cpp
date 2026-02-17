@@ -3,15 +3,23 @@
 #include <SDL2/SDL.h>
 #include "scratchdefinition.h"
 #include "scratchengine.h"
-
 using namespace std;
+
+void addVariable(Sprite &sprite, string name, double initialValue) {
+    for (const auto& v : sprite.variables) {
+        if (v.name == name) return;
+    }
+    sprite.variables.push_back({name, initialValue});
+    cout << "Variable created: " << name << endl;
+}
 
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        cout << "SDL Error: " << SDL_GetError() << endl;
         return 1;
     }
     
-    SDL_Window* window = SDL_CreateWindow("Phase 3 & 4: Logic Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, STAGE_WIDTH, STAGE_HEIGHT, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Phase 3 & 4: Final Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, STAGE_WIDTH, STAGE_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     Sprite cat;
@@ -21,23 +29,31 @@ int main(int argc, char* argv[]) {
     cat.currentBlockIndex = 0; cat.isRunning = true;
     
     cat.isPenDown = true;
-    cat.penR = 0; cat.penG = 255; cat.penB = 0; 
+    cat.penR = 0; cat.penG = 100; cat.penB = 255; 
     cat.penThickness = 2;
 
+    addVariable(cat, "Score", 0);
+    
     cat.script.push_back({FOREVER_START, 0, 0});
         
-        cat.script.push_back({MOVE_STEPS, 2, 0});
+        cat.script.push_back({MOVE_STEPS, 4, 0});
 
-        cat.script.push_back({IF_ELSE_START, 0, 0, 0, KEY_SPACE_PRESSED, 0});
+        cat.script.push_back({IF_ELSE_START, 0, 0, 0, "", KEY_SPACE_PRESSED, 0});
             cat.script.push_back({TURN_RIGHT, 5, 0});
+            
+            Block changeScore;
+            changeScore.type = CHANGE_VARIABLE_BY;
+            changeScore.val1 = 1;
+            changeScore.strVal = "Score";
+            cat.script.push_back(changeScore);
+            
             cat.script.push_back({SET_PEN_COLOR, 255, 0, 0});
+
         cat.script.push_back({ELSE_START, 0, 0});
-            cat.script.push_back({SET_PEN_COLOR, 0, 255, 0});
+            cat.script.push_back({SET_PEN_COLOR, 0, 100, 255});
         cat.script.push_back({IF_END, 0, 0});
 
-        cat.script.push_back({IF_START, 0, 0, 0, TOUCHING_EDGE, 0});
-             cat.script.push_back({IF_ON_EDGE_BOUNCE, 0, 0});
-        cat.script.push_back({IF_END, 0, 0});
+        cat.script.push_back({IF_ON_EDGE_BOUNCE, 0, 0});
 
     cat.script.push_back({FOREVER_END, 0, 0});
 
@@ -49,11 +65,11 @@ int main(int argc, char* argv[]) {
             if (e.type == SDL_QUIT) quit = true;
         }
         
-        SDL_PumpEvents(); 
+        SDL_PumpEvents();
 
         if (cat.isRunning) {
             executeNextBlock(cat);
-            SDL_Delay(5); 
+            SDL_Delay(10); 
         }
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -68,10 +84,10 @@ int main(int argc, char* argv[]) {
             SDL_Rect rect = {(int)cat.x, (int)cat.y, (int)cat.size, (int)cat.size};
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderFillRect(renderer, &rect);
-            
+        
             int cx = (int)cat.x + cat.size/2;
             int cy = (int)cat.y + cat.size/2;
-            SDL_RenderDrawLine(renderer, cx, cy, cx + 20 * cos(toRadians(cat.direction)), cy + 20 * sin(toRadians(cat.direction)));
+            SDL_RenderDrawLine(renderer, cx, cy, cx + 20 * cos(cat.direction * PI/180.0), cy + 20 * sin(cat.direction * PI/180.0));
         }
 
         SDL_RenderPresent(renderer);

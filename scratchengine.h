@@ -1,11 +1,9 @@
 #ifndef SCRATCH_ENGINE_H
 #define SCRATCH_ENGINE_H
-
 #include "scratchdefinition.h"
 #include <cmath>
 #include <iostream>
 #include <SDL2/SDL.h>
-
 using namespace std;
 
 const int STAGE_WIDTH = 800;
@@ -56,6 +54,15 @@ int findMatchingEnd(Sprite &sprite, int startIndex) {
     return sprite.script.size();
 }
 
+Variable* findVariable(Sprite &sprite, string name) {
+    for (auto &var : sprite.variables) {
+        if (var.name == name) {
+            return &var;
+        }
+    }
+    return nullptr;
+}
+
 void executeNextBlock(Sprite &sprite) {
     if (!sprite.isRunning || sprite.currentBlockIndex >= sprite.script.size()) {
         sprite.isRunning = false;
@@ -67,8 +74,10 @@ void executeNextBlock(Sprite &sprite) {
 
     switch (current.type) {
         case MOVE_STEPS: {
-            double oldX = sprite.x; double oldY = sprite.y;
+            double oldX = sprite.x; 
+            double oldY = sprite.y;
             double rad = toRadians(sprite.direction);
+            
             sprite.x += current.val1 * cos(rad);
             sprite.y += current.val1 * sin(rad);
             
@@ -77,17 +86,16 @@ void executeNextBlock(Sprite &sprite) {
             }
             break;
         }
-        case TURN_RIGHT: sprite.direction += current.val1; break;
-        case TURN_LEFT:  sprite.direction -= current.val1; break;
-        case GO_TO_XY:   sprite.x = current.val1; sprite.y = current.val2; break;
-        case PEN_DOWN:   sprite.isPenDown = true; break;
-        case PEN_UP:     sprite.isPenDown = false; break;
-        case SET_PEN_COLOR: 
-            sprite.penR = (Uint8)current.val1; 
-            sprite.penG = (Uint8)current.val2; 
-            sprite.penB = (Uint8)current.val3; 
+        case TURN_RIGHT:
+            sprite.direction += current.val1;
             break;
-
+        case TURN_LEFT:
+            sprite.direction -= current.val1;
+            break;
+        case GO_TO_XY:
+            sprite.x = current.val1;
+            sprite.y = current.val2;
+            break;
         case IF_ON_EDGE_BOUNCE: {
             if (sprite.x > STAGE_WIDTH) {
                 sprite.x = STAGE_WIDTH;
@@ -106,6 +114,21 @@ void executeNextBlock(Sprite &sprite) {
             break;
         }
 
+        case PEN_DOWN:
+            sprite.isPenDown = true;
+            break;
+        case PEN_UP:
+            sprite.isPenDown = false;
+            break;
+        case SET_PEN_COLOR:
+            sprite.penR = (Uint8)current.val1;
+            sprite.penG = (Uint8)current.val2;
+            sprite.penB = (Uint8)current.val3;
+            break;
+        case CLEAR_ALL:
+            sprite.penTrail.clear();
+            break;
+
         case REPEAT_START: {
             LoopState newLoop;
             newLoop.startIndex = sprite.currentBlockIndex;
@@ -114,7 +137,6 @@ void executeNextBlock(Sprite &sprite) {
             sprite.loopStack.push_back(newLoop);
             break; 
         }
-
         case REPEAT_END: {
             if (!sprite.loopStack.empty()) {
                 LoopState &top = sprite.loopStack.back();
@@ -131,7 +153,6 @@ void executeNextBlock(Sprite &sprite) {
             }
             break;
         }
-
         case FOREVER_START: {
             LoopState newLoop;
             newLoop.startIndex = sprite.currentBlockIndex;
@@ -140,7 +161,6 @@ void executeNextBlock(Sprite &sprite) {
             sprite.loopStack.push_back(newLoop);
             break;
         }
-
         case FOREVER_END: {
              if (!sprite.loopStack.empty()) {
                 LoopState &top = sprite.loopStack.back();
@@ -159,7 +179,6 @@ void executeNextBlock(Sprite &sprite) {
             }
             break;
         }
-
         case IF_ELSE_START: {
             bool isTrue = checkCondition(sprite, current.condType, current.condValue);
             if (!isTrue) {
@@ -169,21 +188,35 @@ void executeNextBlock(Sprite &sprite) {
             }
             break;
         }
-
         case ELSE_START: {
             int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
             sprite.currentBlockIndex = jumpIndex;
             autoAdvance = false;
             break;
         }
-
         case IF_END:
             break;
-            
         case WAIT_UNTIL: {
             bool isTrue = checkCondition(sprite, current.condType, current.condValue);
             if (!isTrue) {
                 autoAdvance = false;
+            }
+            break;
+        }
+
+        case SET_VARIABLE_TO: {
+            Variable* var = findVariable(sprite, current.strVal);
+            if (var != nullptr) {
+                var->value = current.val1;
+                cout << "Variable [" << var->name << "] set to: " << var->value << endl;
+            }
+            break;
+        }
+        case CHANGE_VARIABLE_BY: {
+            Variable* var = findVariable(sprite, current.strVal);
+            if (var != nullptr) {
+                var->value += current.val1;
+                cout << "Variable [" << var->name << "] changed to: " << var->value << endl;
             }
             break;
         }
