@@ -1,9 +1,11 @@
 #ifndef SCRATCH_ENGINE_H
 #define SCRATCH_ENGINE_H
+
 #include "scratchdefinition.h"
 #include <cmath>
 #include <iostream>
 #include <SDL2/SDL.h>
+
 using namespace std;
 
 const int STAGE_WIDTH = 800;
@@ -14,7 +16,7 @@ double toRadians(double degrees) {
     return degrees * (PI / 180.0);
 }
 
-bool checkCondition(Sprite &sprite, ConditionType type, double value) {
+bool checkCondition(Sprite &s, ConditionType type, double value) {
     switch (type) {
         case KEY_SPACE_PRESSED: {
             const Uint8 *state = SDL_GetKeyboardState(NULL);
@@ -26,21 +28,21 @@ bool checkCondition(Sprite &sprite, ConditionType type, double value) {
             return (buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0;
         }
         case TOUCHING_EDGE: {
-            return (sprite.x <= 0 || sprite.x >= STAGE_WIDTH || 
-                    sprite.y <= 0 || sprite.y >= STAGE_HEIGHT);
+            return (s.x <= 0 || s.x >= STAGE_WIDTH || 
+                    s.y <= 0 || s.y >= STAGE_HEIGHT);
         }
         case X_GREATER_THAN:
-            return sprite.x > value;
+            return s.x > value;
         case X_LESS_THAN:
-            return sprite.x < value;
+            return s.x < value;
     }
     return false;
 }
 
-int findMatchingEnd(Sprite &sprite, int startIndex) {
+int findMatchingEnd(Sprite &s, int startIndex) {
     int depth = 0;
-    for (int i = startIndex + 1; i < sprite.script.size(); i++) {
-        BlockType t = sprite.script[i].type;
+    for (int i = startIndex + 1; i < s.script.size(); i++) {
+        BlockType t = s.script[i].type;
         
         if (t == IF_START || t == IF_ELSE_START) {
             depth++;
@@ -51,11 +53,11 @@ int findMatchingEnd(Sprite &sprite, int startIndex) {
             return i;
         }
     }
-    return sprite.script.size();
+    return s.script.size();
 }
 
-Variable* findVariable(Sprite &sprite, string name) {
-    for (auto &var : sprite.variables) {
+Variable* findVariable(Sprite &s, string name) {
+    for (auto &var : s.variables) {
         if (var.name == name) {
             return &var;
         }
@@ -63,167 +65,168 @@ Variable* findVariable(Sprite &sprite, string name) {
     return nullptr;
 }
 
-void executeNextBlock(Sprite &sprite) {
-    if (!sprite.isRunning || sprite.currentBlockIndex >= sprite.script.size()) {
-        sprite.isRunning = false;
+void executeNextBlock(Sprite &s) {
+    if (!s.isRunning || s.currentBlockIndex >= s.script.size()) {
+        s.isRunning = false;
         return;
     }
 
-    Block &current = sprite.script[sprite.currentBlockIndex];
+    Block &current = s.script[s.currentBlockIndex];
     bool autoAdvance = true; 
 
     switch (current.type) {
         case MOVE_STEPS: {
-            double oldX = sprite.x; 
-            double oldY = sprite.y;
-            double rad = toRadians(sprite.direction);
+            double oldX = s.x; 
+            double oldY = s.y;
+            double rad = toRadians(s.direction);
             
-            sprite.x += current.val1 * cos(rad);
-            sprite.y += current.val1 * sin(rad);
+            s.x += current.val1 * cos(rad);
+            s.y += current.val1 * sin(rad);
             
-            if (sprite.isPenDown) {
-                sprite.penTrail.push_back({oldX, oldY, sprite.x, sprite.y, sprite.penR, sprite.penG, sprite.penB, sprite.penThickness});
+            if (s.isPenDown) {
+                s.penTrail.push_back({oldX, oldY, s.x, s.y, s.penR, s.penG, s.penB, s.penThickness});
             }
             break;
         }
         case TURN_RIGHT:
-            sprite.direction += current.val1;
+            s.direction += current.val1;
             break;
         case TURN_LEFT:
-            sprite.direction -= current.val1;
+            s.direction -= current.val1;
             break;
         case GO_TO_XY:
-            sprite.x = current.val1;
-            sprite.y = current.val2;
+            s.x = current.val1;
+            s.y = current.val2;
             break;
         case IF_ON_EDGE_BOUNCE: {
-            if (sprite.x > STAGE_WIDTH) {
-                sprite.x = STAGE_WIDTH;
-                sprite.direction = 180 - sprite.direction;
-            } else if (sprite.x < 0) {
-                sprite.x = 0;
-                sprite.direction = 180 - sprite.direction;
+            if (s.x > STAGE_WIDTH) {
+                s.x = STAGE_WIDTH;
+                s.direction = 180 - s.direction;
+            } else if (s.x < 0) {
+                s.x = 0;
+                s.direction = 180 - s.direction;
             }
-            if (sprite.y > STAGE_HEIGHT) {
-                sprite.y = STAGE_HEIGHT;
-                sprite.direction = 360 - sprite.direction;
-            } else if (sprite.y < 0) {
-                sprite.y = 0;
-                sprite.direction = 360 - sprite.direction;
+            if (s.y > STAGE_HEIGHT) {
+                s.y = STAGE_HEIGHT;
+                s.direction = 360 - s.direction;
+            } else if (s.y < 0) {
+                s.y = 0;
+                s.direction = 360 - s.direction;
             }
             break;
         }
-
         case PEN_DOWN:
-            sprite.isPenDown = true;
+            s.isPenDown = true;
             break;
         case PEN_UP:
-            sprite.isPenDown = false;
+            s.isPenDown = false;
             break;
         case SET_PEN_COLOR:
-            sprite.penR = (Uint8)current.val1;
-            sprite.penG = (Uint8)current.val2;
-            sprite.penB = (Uint8)current.val3;
+            s.penR = (Uint8)current.val1;
+            s.penG = (Uint8)current.val2;
+            s.penB = (Uint8)current.val3;
             break;
         case CLEAR_ALL:
-            sprite.penTrail.clear();
+            s.penTrail.clear();
             break;
-
         case REPEAT_START: {
             LoopState newLoop;
-            newLoop.startIndex = sprite.currentBlockIndex;
+            newLoop.startIndex = s.currentBlockIndex;
             newLoop.remaining = (int)current.val1;
             newLoop.isForever = false;
-            sprite.loopStack.push_back(newLoop);
+            s.loopStack.push_back(newLoop);
             break; 
         }
         case REPEAT_END: {
-            if (!sprite.loopStack.empty()) {
-                LoopState &top = sprite.loopStack.back();
+            if (!s.loopStack.empty()) {
+                LoopState &top = s.loopStack.back();
                 if (!top.isForever) {
                     top.remaining--;
                 }
 
                 if (top.isForever || top.remaining > 0) {
-                    sprite.currentBlockIndex = top.startIndex + 1;
+                    s.currentBlockIndex = top.startIndex + 1;
                     autoAdvance = false; 
                 } else {
-                    sprite.loopStack.pop_back();
+                    s.loopStack.pop_back();
                 }
             }
             break;
         }
         case FOREVER_START: {
             LoopState newLoop;
-            newLoop.startIndex = sprite.currentBlockIndex;
+            newLoop.startIndex = s.currentBlockIndex;
             newLoop.remaining = -1;
             newLoop.isForever = true;
-            sprite.loopStack.push_back(newLoop);
+            s.loopStack.push_back(newLoop);
             break;
         }
         case FOREVER_END: {
-             if (!sprite.loopStack.empty()) {
-                LoopState &top = sprite.loopStack.back();
-                sprite.currentBlockIndex = top.startIndex + 1;
+             if (!s.loopStack.empty()) {
+                LoopState &top = s.loopStack.back();
+                s.currentBlockIndex = top.startIndex + 1;
                 autoAdvance = false;
              }
              break;
         }
-
         case IF_START: {
-            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
+            bool isTrue = checkCondition(s, current.condType, current.condValue);
             if (!isTrue) {
-                int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
-                sprite.currentBlockIndex = jumpIndex; 
+                int jumpIndex = findMatchingEnd(s, s.currentBlockIndex);
+                s.currentBlockIndex = jumpIndex; 
                 autoAdvance = false; 
             }
             break;
         }
         case IF_ELSE_START: {
-            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
+            bool isTrue = checkCondition(s, current.condType, current.condValue);
             if (!isTrue) {
-                int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
-                sprite.currentBlockIndex = jumpIndex;
+                int jumpIndex = findMatchingEnd(s, s.currentBlockIndex);
+                s.currentBlockIndex = jumpIndex;
                 autoAdvance = false;
             }
             break;
         }
         case ELSE_START: {
-            int jumpIndex = findMatchingEnd(sprite, sprite.currentBlockIndex);
-            sprite.currentBlockIndex = jumpIndex;
+            int jumpIndex = findMatchingEnd(s, s.currentBlockIndex);
+            s.currentBlockIndex = jumpIndex;
             autoAdvance = false;
             break;
         }
         case IF_END:
             break;
-        case WAIT_UNTIL: {
-            bool isTrue = checkCondition(sprite, current.condType, current.condValue);
-            if (!isTrue) {
-                autoAdvance = false;
-            }
-            break;
-        }
-
         case SET_VARIABLE_TO: {
-            Variable* var = findVariable(sprite, current.strVal);
+            Variable* var = findVariable(s, current.strVal);
             if (var != nullptr) {
                 var->value = current.val1;
-                cout << "Variable [" << var->name << "] set to: " << var->value << endl;
             }
             break;
         }
         case CHANGE_VARIABLE_BY: {
-            Variable* var = findVariable(sprite, current.strVal);
+            Variable* var = findVariable(s, current.strVal);
             if (var != nullptr) {
                 var->value += current.val1;
-                cout << "Variable [" << var->name << "] changed to: " << var->value << endl;
+            }
+            break;
+        }
+        case WAIT_SECONDS: {
+            Uint32 now = SDL_GetTicks();
+            if (s.wait_timer == 0) {
+                s.wait_timer = now;
+                autoAdvance = false;
+            } else {
+                if (now - s.wait_timer < current.val1 * 1000) {
+                    autoAdvance = false;
+                } else {
+                    s.wait_timer = 0;
+                }
             }
             break;
         }
     }
 
     if (autoAdvance) {
-        sprite.currentBlockIndex++;
+        s.currentBlockIndex++;
     }
 }
 

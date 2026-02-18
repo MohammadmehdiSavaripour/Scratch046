@@ -16,7 +16,7 @@ void make_var(Sprite &s, string n, double v) {
 
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) return 1;
-    SDL_Window* win = SDL_CreateWindow("Phase 5", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, STAGE_WIDTH, STAGE_HEIGHT, SDL_WINDOW_SHOWN);
+    SDL_Window* win = SDL_CreateWindow("Phase 3 & 4 Final Project", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, STAGE_WIDTH, STAGE_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
 
     vector<Sprite> all_sprites;
@@ -28,11 +28,13 @@ int main(int argc, char* argv[]) {
     s1.isPenDown = true;
     s1.penR = 255; s1.penG = 0; s1.penB = 0;
     s1.penThickness = 2;
+    s1.wait_timer = 0;
 
     s1.script.push_back({FOREVER_START, 0, 0});
-        s1.script.push_back({MOVE_STEPS, 3, 0});
+        s1.script.push_back({MOVE_STEPS, 4, 0});
         s1.script.push_back({IF_START, 0, 0, 0, "", KEY_SPACE_PRESSED, 0});
-            s1.script.push_back({TURN_RIGHT, 5, 0});
+            s1.script.push_back({WAIT_SECONDS, 1.0, 0});
+            s1.script.push_back({TURN_RIGHT, 45, 0});
         s1.script.push_back({IF_END, 0, 0});
         s1.script.push_back({IF_ON_EDGE_BOUNCE, 0, 0});
     s1.script.push_back({FOREVER_END, 0, 0});
@@ -47,9 +49,10 @@ int main(int argc, char* argv[]) {
     s2.isPenDown = true;
     s2.penR = 0; s2.penG = 0; s2.penB = 255;
     s2.penThickness = 4;
+    s2.wait_timer = 0;
 
     s2.script.push_back({FOREVER_START, 0, 0});
-        s2.script.push_back({MOVE_STEPS, 5, 0});
+        s2.script.push_back({MOVE_STEPS, 6, 0});
         s2.script.push_back({IF_ON_EDGE_BOUNCE, 0, 0});
         s2.script.push_back({IF_ELSE_START, 0, 0, 0, "", X_GREATER_THAN, 400});
              s2.script.push_back({TURN_RIGHT, 2, 0});

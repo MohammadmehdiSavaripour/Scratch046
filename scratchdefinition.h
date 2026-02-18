@@ -1,8 +1,10 @@
 #ifndef SCRATCH_DEFINITION_H
 #define SCRATCH_DEFINITION_H
+
 #include <vector>
 #include <string>
 #include <SDL2/SDL.h>
+
 using namespace std;
 
 enum BlockType {
@@ -11,7 +13,6 @@ enum BlockType {
     TURN_LEFT,
     GO_TO_XY,
     IF_ON_EDGE_BOUNCE,
-
     PEN_DOWN,
     PEN_UP,
     SET_PEN_COLOR,
@@ -24,10 +25,9 @@ enum BlockType {
     IF_ELSE_START,
     ELSE_START,
     IF_END,
-    WAIT_UNTIL,
-
     SET_VARIABLE_TO,
-    CHANGE_VARIABLE_BY
+    CHANGE_VARIABLE_BY,
+    WAIT_SECONDS
 };
 
 enum ConditionType {
@@ -43,9 +43,7 @@ struct Block {
     double val1;
     double val2;
     double val3;
-    
     string strVal;
-    
     ConditionType condType;
     double condValue;
 };
@@ -77,12 +75,15 @@ struct Sprite {
     Uint8 penR, penG, penB;
     int penThickness;
     vector<Line> penTrail;
+
     vector<Block> script;
     int currentBlockIndex;
     bool isRunning;
-
+    
     vector<LoopState> loopStack;
     vector<Variable> variables;
+
+    Uint32 wait_timer;
 };
 
 #endif
