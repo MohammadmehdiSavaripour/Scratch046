@@ -2,13 +2,18 @@ cmake_minimum_required(VERSION 3.16)
 project(scratch_phase1)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(SDL2 REQUIRED)
 
-add_executable(scratch_phase1
-        phase1.cpp
-        scratchengine.cpp
+include_directories(
+        ${SDL2_INCLUDE_DIRS}
 )
 
-target_include_directories(scratch_phase1 PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(scratch_phase1 ${SDL2_LIBRARIES})
+add_executable(scratch_phase1
+        main.cpp
+)
+
+target_link_libraries(scratch_phase1
+        ${SDL2_LIBRARIES}
+)

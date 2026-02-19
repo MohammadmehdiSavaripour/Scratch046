@@ -14,7 +14,9 @@
   <component name="ChangeListManager">
     <list default="true" id="0dd7243b-ed70-46b1-bffa-441fa4b17975" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/phase1.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/phase1.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scratchenginee.cpp" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,6 +25,13 @@
   </component>
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="CMakeLists.txt" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
@@ -89,7 +98,8 @@
       <workItem from="1771486356532" duration="20000" />
       <workItem from="1771486395392" duration="332000" />
       <workItem from="1771486743387" duration="906000" />
-      <workItem from="1771487686237" duration="1808000" />
+      <workItem from="1771487686237" duration="2561000" />
+      <workItem from="1771490906397" duration="275000" />
     </task>
     <servers />
   </component>
