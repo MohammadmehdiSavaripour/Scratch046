@@ -1,66 +1,35 @@
-#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <iostream>
-#include <string>
-#include <fstream>
+#include <vector>
 
 using namespace std;
 
 struct Sprite {
-    SDL_Texture* texture;
-    int x, y;
-    int w, h;
+    int x, y, w, h;
     int startX, startY;
-    bool isDragging;
 };
 
-void savePosition(Sprite &s) {
-    ofstream outFile("save_pos.txt");
-    if (outFile.is_open()) {
-        outFile << s.x << " " << s.y;
-        outFile.close();
-        cout << "Position saved to file!" << endl;
-    }
-}
+struct UIBlock {
+    int x, y, w, h;
+    bool isSelected;
+    SDL_Color color;
+};
 
-void loadPosition(Sprite &s) {
-    ifstream inFile("save_pos.txt");
-    if (inFile.is_open()) {
-        inFile >> s.x >> s.y;
-        inFile.close();
-        cout << "Position loaded from file!" << endl;
-    }
-}
-
-Sprite loadSprite(SDL_Renderer* renderer, string path, int x, int y, int w, int h) {
-    Sprite s;
-    SDL_Surface* tempSurface = IMG_Load(path.c_str());
-    if (!tempSurface) cout << "Error loading image: " << IMG_GetError() << endl;
-    s.texture = SDL_CreateTextureFromSurface(renderer, tempSurface);
-    SDL_FreeSurface(tempSurface);
-
-    s.x = x; s.y = y;
-    s.w = w; s.h = h;
-    s.startX = x; s.startY = y;
-    s.isDragging = false;
-
-    return s;
-}
-
-void drawSprite(SDL_Renderer* renderer, Sprite &s) {
-    SDL_Rect dest = { s.x, s.y, s.w, s.h };
-    SDL_RenderCopy(renderer, s.texture, NULL, &dest);
+void resetSprite(Sprite &s) {
+    s.x = s.startX;
+    s.y = s.startY;
 }
 
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_EVERYTHING);
-    IMG_Init(IMG_INIT_PNG);
-
-    SDL_Window* win = SDL_CreateWindow("Phase 2 & 5 Intro", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
+    SDL_Window* win = SDL_CreateWindow("Phase 2 & 5", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
     SDL_Renderer* ren = SDL_CreateRenderer(win, -1, 0);
 
-    Sprite myPlayer = loadSprite(ren, "assets/character.png", 100, 100, 80, 80);
+    Sprite cat = {400, 300, 50, 50, 400, 300};
+
+    vector<UIBlock> blocks;
+    blocks.push_back({50, 50, 100, 40, false, {255, 200, 0, 255}});
+    blocks.push_back({50, 100, 100, 40, false, {0, 150, 255, 255}});
 
     bool running = true;
     SDL_Event e;
@@ -68,49 +37,56 @@ int main(int argc, char* argv[]) {
     while (running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = false;
+
             if (e.type == SDL_MOUSEBUTTONDOWN) {
-                if (e.button.button == SDL_BUTTON_LEFT) {
-                    int mx = e.button.x;
-                    int my = e.button.y;
-                    if (mx >= myPlayer.x && mx <= myPlayer.x + myPlayer.w &&
-                        my >= myPlayer.y && my <= myPlayer.y + myPlayer.h) {
-                        myPlayer.isDragging = true;
+                for (auto &b : blocks) {
+                    if (e.button.x >= b.x && e.button.x <= b.x + b.w &&
+                        e.button.y >= b.y && e.button.y <= b.y + b.h) {
+                        b.isSelected = true;
                     }
                 }
             }
             if (e.type == SDL_MOUSEBUTTONUP) {
-                myPlayer.isDragging = false;
+                for (auto &b : blocks) {
+                    b.isSelected = false;
+                }
             }
             if (e.type == SDL_MOUSEMOTION) {
-                if (myPlayer.isDragging) {
-                    myPlayer.x = e.motion.x - (myPlayer.w / 2);
-                    myPlayer.y = e.motion.y - (myPlayer.h / 2);
+                for (auto &b : blocks) {
+                    if (b.isSelected) {
+                        b.x = e.motion.x - (b.w / 2);
+                        b.y = e.motion.y - (b.h / 2);
+                    }
                 }
             }
 
             if (e.type == SDL_KEYDOWN) {
-                if (e.key.keysym.sym == SDLK_s) savePosition(myPlayer);
-                if (e.key.keysym.sym == SDLK_l) loadPosition(myPlayer);
-                if (e.key.keysym.sym == SDLK_r) {
-                    myPlayer.x = myPlayer.startX;
-                    myPlayer.y = myPlayer.startY;
-                }
+                if (e.key.keysym.sym == SDLK_r) resetSprite(cat);
+                if (e.key.keysym.sym == SDLK_RIGHT) cat.x += 10;
             }
         }
 
-        SDL_SetRenderDrawColor(ren, 240, 240, 240, 255);
+        SDL_SetRenderDrawColor(ren, 255, 255, 255, 255);
         SDL_RenderClear(ren);
 
-        drawSprite(ren, myPlayer);
+        SDL_Rect sideBar = {0, 0, 200, 600};
+        SDL_SetRenderDrawColor(ren, 220, 220, 220, 255);
+        SDL_RenderFillRect(ren, &sideBar);
+
+        for (const auto &b : blocks) {
+            SDL_Rect r = {b.x, b.y, b.w, b.h};
+            SDL_SetRenderDrawColor(ren, b.color.r, b.color.g, b.color.b, 255);
+            SDL_RenderFillRect(ren, &r);
+        }
+        SDL_Rect catRect = {cat.x, cat.y, cat.w, cat.h};
+        SDL_SetRenderDrawColor(ren, 255, 0, 0, 255);
+        SDL_RenderFillRect(ren, &catRect);
 
         SDL_RenderPresent(ren);
     }
 
-    SDL_DestroyTexture(myPlayer.texture);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);
-    IMG_Quit();
     SDL_Quit();
-
     return 0;
 }
