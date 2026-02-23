@@ -1,0 +1,11 @@
+PROJECT|My Project
+BLOCK|9|move|10||10|-1|-1
+BLOCK|10|move|10||12|-1|-1
+BLOCK|11|move|10||15|-1|-1
+BLOCK|12|move|10||14|-1|-1
+BLOCK|13|move|10||16|-1|-1
+BLOCK|14|move|10||13|-1|-1
+BLOCK|15|move|10||9|-1|-1
+BLOCK|16|repeat|3||-1|-1|-1
+SPRITE|877.32|370|45|1|Cat
+SPRITE|980|270|0|1|Dog
